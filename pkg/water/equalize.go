@@ -144,9 +144,11 @@ func visitEqualize(i int, waters, heights []float64, visited map[int]bool, spher
 		hi := math.Max(cell.Height, hc)
 		for _, n := range sphere.Faces[cell.Index].Neighbors {
 			if visited[n] {
+				// Don't add already-visited cells.
 				continue
 			}
-			if heights[n]+waters[n]-cell.Height < 0.001 {
+			if heights[n]+waters[n]-hi < 0.001 {
+				// Don't add cells we can't possibly take water from.
 				continue
 			}
 			toVisit.Insert(Ordinal{Index: n, Height: hi})
