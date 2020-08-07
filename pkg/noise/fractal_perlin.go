@@ -30,6 +30,7 @@ func NewPerlinFractal(dim int, depth int, scale float64) *PerlinFractal {
 
 func (p *PerlinFractal) ValueAt(v geodesic.Vector) float64 {
 	result := p.Perlin.ValueAt(v)
+	v = v.Scale(2.0)
 
 	cScale := 1.0
 	for i := 0; i < p.Depth; i++ {

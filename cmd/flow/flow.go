@@ -46,31 +46,31 @@ func main() {
 			oceanWater += -h
 		}
 	}
-	avgWater := oceanWater / float64(len(sphere.Centers) / 2)
+	avgWater := oceanWater / float64(len(sphere.Centers)/2)
 	fmt.Println(avgWater)
 
 	projection := render.Project(screen, render.Equirectangular{})
 
-	quanta := 0.005
+	quanta := 0.01
 	iters := int(avgWater / quanta)
 	fmt.Println("Total Iters:", iters)
 	flow := make([]float64, len(waters))
 
 	renderImg(seed, projection, spheres, heights, waters, flow, 0)
-	for iter := 0; iter < iters; iter++ {
+	for iter := 1; iter < iters; iter++ {
 		fmt.Print(iter, "...", "Raining")
 		water.Rain(quanta, waters, heights, flow, sphere)
 
-		if iter % 2 == 1 {
+		if iter % 5 == 0 {
 			fmt.Print("...", "Equalizing")
 			water.Equalize(waters, heights, sphere)
 			renderImg(seed, projection, spheres, heights, waters, flow, iter)
-			fmt.Println()
 		}
 
 		fmt.Println()
 	}
 
+	water.Equalize(waters, heights, sphere)
 	renderImg(seed, projection, spheres, heights, waters, flow, iters)
 }
 
@@ -90,7 +90,7 @@ func renderImg(seed int64, projection render.Projection, spheres []*geodesic.Geo
 			idx := geodesic.Find(spheres, v)
 			dist := math.Sqrt(geodesic.DistSq(v, sphere.Centers[idx]))
 
-			pxW1 := waters[idx] + flow[idx] / 2000.0
+			pxW1 := waters[idx] + flow[idx]/2000.0
 			pxH1 := heights[idx]
 
 			// Linearly interpolate the cell's stats with the second-closest cell.
@@ -104,11 +104,11 @@ func renderImg(seed int64, projection render.Projection, spheres []*geodesic.Geo
 				}
 			}
 			dist2 := math.Sqrt(distSq2)
-			pxW2 := waters[idx2] + flow[idx2] / 2000.0
+			pxW2 := waters[idx2] + flow[idx2]/2000.0
 			pxH2 := heights[idx2]
 
-			pxWaterHeights[pidx] = render.Lerp(pxW1, pxW2, dist / (dist + dist2))
-			pxLandHeights[pidx] = render.Lerp(pxH1, pxH2, dist / (dist + dist2))
+			pxWaterHeights[pidx] = render.Lerp(pxW1, pxW2, dist/(dist+dist2))
+			pxLandHeights[pidx] = render.Lerp(pxH1, pxH2, dist/(dist+dist2))
 		}
 	}
 

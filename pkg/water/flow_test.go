@@ -21,12 +21,12 @@ func TestRain(t *testing.T) {
 		{
 			name: "length 10",
 			height: make([]float64, 10),
-			maxDiff: 0.00020,
+			maxDiff: 0.020,
 		},
 		{
 			name: "length 100",
 			height: make([]float64, 100),
-			maxDiff: 0.03500,
+			maxDiff: 2.500,
 		},
 	}
 

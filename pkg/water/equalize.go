@@ -1,7 +1,6 @@
 package water
 
 import (
-	"fmt"
 	"github.com/willbeason/hydrology/pkg/geodesic"
 	"math"
 	"sort"
@@ -38,10 +37,6 @@ func (l *Lake) Merge(other *Lake) {
 }
 
 func (l *Lake) Equalize() {
-	if len(l.IndexHeights) < 2 {
-		return
-	}
-
 	// Sort heights from lowest to highest.
 	sort.Slice(l.IndexHeights, func(i, j int) bool {
 		return l.IndexHeights[i].Height < l.IndexHeights[j].Height
@@ -54,8 +49,10 @@ func (l *Lake) Equalize() {
 	volume := 0.0
 	waterLevel := 0.0
 	maxI := len(l.IndexHeights)
+	landVolume := 0.0
 	for i < maxI {
 		ih := l.IndexHeights[i]
+		landVolume += ih.Height
 
 		newVolume := volume + float64(i)*(ih.Height-waterLevel)
 		if newVolume > l.WaterVolume {
@@ -70,7 +67,7 @@ func (l *Lake) Equalize() {
 
 	// Check for the case that everywhere ends up with water.
 	if i == maxI {
-		waterLevel = l.WaterVolume / float64(maxI)
+		waterLevel = (l.WaterVolume + landVolume) / float64(maxI)
 	}
 
 	for j := range l.IndexHeights[:i] {
@@ -78,25 +75,21 @@ func (l *Lake) Equalize() {
 	}
 }
 
-type VisitOrdinal struct {
-	Index int
-	Height float64
-}
-
 func Equalize(waters, heights []float64, sphere *geodesic.Geodesic) {
 	var lakes []Lake
 
-	// Visit nodes from highest to lowest to allow for water flowing downhill.
-	toVisit := make([]VisitOrdinal, len(heights))
+	// Visit nodes from lowest to highest.
+	toVisit := make([]Ordinal, len(heights))
 	for i, h := range heights {
 		toVisit[i].Index = i
 		toVisit[i].Height = h
 	}
 	sort.Slice(toVisit, func(i, j int) bool {
-		return toVisit[i].Height > toVisit[j].Height
+		return toVisit[i].Height < toVisit[j].Height
 	})
 
 	visited := make(map[int]bool, len(sphere.Centers))
+
 	for _, v := range toVisit {
 		if visited[v.Index] {
 			continue
@@ -107,48 +100,58 @@ func Equalize(waters, heights []float64, sphere *geodesic.Geodesic) {
 		}
 	}
 
-	fmt.Println(len(lakes))
 	sort.Slice(lakes, func(i, j int) bool {
 		return len(lakes[i].IndexHeights) > len(lakes[j].IndexHeights)
 	})
 	for _, l := range lakes {
 		l.Equalize()
 		for _, ih := range l.IndexHeights {
-			waters[ih.Index] = ih.Water
+			waters[ih.Index] += ih.Water
 		}
 	}
 }
 
 func visitEqualize(i int, waters, heights []float64, visited map[int]bool, sphere *geodesic.Geodesic) *Lake {
-	if visited[i] || waters[i] < 0.001 {
+	if visited[i] {
 		return nil
 	}
 	visited[i] = true
 
-	lake := &Lake{}
-	lake.Add(i, heights[i], waters[i])
+	l := &Lake{}
 
-	var toVisit []int
-	toVisit = append(toVisit, sphere.Faces[i].Neighbors...)
-	nToVisit := len(toVisit)
+	var toVisit OrdinalList
+	hi := heights[i]
+	toVisit.Insert(Ordinal{Index: i, Height: hi})
+	// We are guaranteed that every neighbor is the same level or higher.
+	for _, n := range sphere.Faces[i].Neighbors {
+		toVisit.Insert(Ordinal{Index: n, Height: hi})
+	}
 
-	minHeight := heights[i]
-	for idx := 0; idx < nToVisit; idx++ {
-		n := toVisit[idx]
-		if visited[n] || (waters[n] < 0.001 && heights[n] > minHeight) {
+	for cell := toVisit.Pop(); cell != nil; cell = toVisit.Pop() {
+		if i != cell.Index && visited[cell.Index] {
 			continue
 		}
-		visited[n] = true
+		visited[cell.Index] = true
 
-		minHeight = math.Min(minHeight, heights[n])
+		// cell.Height actually records the minimum height of the water we may
+		// take from this cell.
+		hc := heights[cell.Index]
+		w := math.Max(0.0, hc+waters[cell.Index]-cell.Height)
+		w = math.Min(w, waters[cell.Index])
+		waters[cell.Index] -= w
+		l.Add(cell.Index, math.Max(hc, cell.Height), w)
 
-		lake.Add(n, heights[n], waters[n])
-		toVisit = append(toVisit, sphere.Faces[n].Neighbors...)
-		nToVisit += len(sphere.Faces[n].Neighbors)
+		hi := math.Max(cell.Height, hc)
+		for _, n := range sphere.Faces[cell.Index].Neighbors {
+			if visited[n] {
+				continue
+			}
+			if heights[n]+waters[n]-cell.Height < 0.001 {
+				continue
+			}
+			toVisit.Insert(Ordinal{Index: n, Height: hi})
+		}
 	}
-	if len(lake.IndexHeights) < 100 {
-		return nil
-	}
 
-	return lake
+	return l
 }

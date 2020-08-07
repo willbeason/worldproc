@@ -138,5 +138,5 @@ func (s Screen) Paint(heights []float64, cs *ColorScale, img *image.RGBA) {
 func gradient(l, r, u, d float64) geodesic.Vector {
 	dx := r - l
 	dy := u - d
-	return geodesic.Vector{X: dx, Y: dy, Z: 0.035}.Normalize()
+	return geodesic.Vector{X: dx, Y: dy, Z: 0.07}.Normalize()
 }

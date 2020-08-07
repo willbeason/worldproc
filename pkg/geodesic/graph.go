@@ -52,53 +52,53 @@ func Dodecahedron() *Geodesic {
 	}
 
 	// North Pole
-	g.link(0, 1)
-	g.link(0, 2)
-	g.link(0, 3)
-	g.link(0, 4)
-	g.link(0, 5)
+	g.Link(0, 1)
+	g.Link(0, 2)
+	g.Link(0, 3)
+	g.Link(0, 4)
+	g.Link(0, 5)
 
 	// North of Equator
-	g.link(1, 2)
-	g.link(2, 3)
-	g.link(3, 4)
-	g.link(4, 5)
-	g.link(5, 1)
+	g.Link(1, 2)
+	g.Link(2, 3)
+	g.Link(3, 4)
+	g.Link(4, 5)
+	g.Link(5, 1)
 
 	// Equator
-	g.link(1, 10)
-	g.link(1, 6)
+	g.Link(1, 10)
+	g.Link(1, 6)
 
-	g.link(2, 6)
-	g.link(2, 7)
+	g.Link(2, 6)
+	g.Link(2, 7)
 
-	g.link(3, 7)
-	g.link(3, 8)
+	g.Link(3, 7)
+	g.Link(3, 8)
 
-	g.link(4, 8)
-	g.link(4, 9)
+	g.Link(4, 8)
+	g.Link(4, 9)
 
-	g.link(5, 9)
-	g.link(5, 10)
+	g.Link(5, 9)
+	g.Link(5, 10)
 
 	// South of Equator
-	g.link(6, 7)
-	g.link(7, 8)
-	g.link(8, 9)
-	g.link(9, 10)
-	g.link(10, 6)
+	g.Link(6, 7)
+	g.Link(7, 8)
+	g.Link(8, 9)
+	g.Link(9, 10)
+	g.Link(10, 6)
 
 	// South Pole
-	g.link(11, 6)
-	g.link(11, 7)
-	g.link(11, 8)
-	g.link(11, 9)
-	g.link(11, 10)
+	g.Link(11, 6)
+	g.Link(11, 7)
+	g.Link(11, 8)
+	g.Link(11, 9)
+	g.Link(11, 10)
 
 	return g
 }
 
-func (g *Geodesic) link(i, j int) {
+func (g *Geodesic) Link(i, j int) {
 	if _, found := g.Edges[Edge{L: i, R: j}]; found {
 		return
 	}
@@ -143,7 +143,7 @@ func Chamfer(g *Geodesic) *Geodesic {
 
 			// Link it to the edge separating it from its neighbor.
 			idIJ := nFaces + g.Edges[Edge{L: faceIdx, R: n1}]
-			result.link(faceIdx, idIJ)
+			result.Link(faceIdx, idIJ)
 
 			// The new face's center bisects the two other faces' centers.
 			result.Centers[idIJ] = bisect(g.Centers[faceIdx], g.Centers[n1])
@@ -158,7 +158,7 @@ func Chamfer(g *Geodesic) *Geodesic {
 					// The three faces [face/n1/n2] were all adjacent, so the
 					// faces (formerly edges) are adjacent to each other.
 					idJK := nFaces + g.Edges[Edge{L: n1, R: n2}]
-					result.link(idIJ, idJK)
+					result.Link(idIJ, idJK)
 				}
 			}
 		}
