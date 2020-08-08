@@ -95,7 +95,7 @@ func Equalize(waters, heights []float64, sphere *geodesic.Geodesic) {
 			continue
 		}
 		newLake := visitEqualize(v.Index, waters, heights, visited, sphere)
-		if newLake != nil {
+		if newLake != nil && newLake.WaterVolume > 0.0 {
 			lakes = append(lakes, *newLake)
 		}
 	}
@@ -141,6 +141,8 @@ func visitEqualize(i int, waters, heights []float64, visited map[int]bool, spher
 		waters[cell.Index] -= w
 		l.Add(cell.Index, math.Max(hc, cell.Height), w)
 
+		// hi tracks the level at which we can start taking water from a cell
+		// adjacent to the current cell.
 		hi := math.Max(cell.Height, hc)
 		for _, n := range sphere.Faces[cell.Index].Neighbors {
 			if visited[n] {

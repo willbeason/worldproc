@@ -5,21 +5,22 @@ import (
 )
 
 type Node struct {
-	Neighbors []int
+	Neighbors []int `json:"Neighbors"`
 }
 
 type Edge struct {
-	L, R int
+	L int `json:"L"`
+	R int `json:"R"`
 }
 
 // Geodesic represents a geodesic sphere.
 type Geodesic struct {
 	// Centers is a list of vectors representing the center of every face of the
 	// geodesic sphere.
-	Centers []Vector
+	Centers []Vector `json:"centers"`
 	// Faces is a list of the neighboring faces of each
-	Faces []Node
-	Edges map[Edge]int
+	Faces []Node `json:"nodes"`
+	Edges map[Edge]int `json:"edges"`
 }
 
 const sin_atan0_5 = 0.447213595
