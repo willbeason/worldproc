@@ -20,7 +20,7 @@ type Geodesic struct {
 	Centers []Vector `json:"centers"`
 	// Faces is a list of the neighboring faces of each
 	Faces []Node `json:"nodes"`
-	Edges map[Edge]int `json:"edges"`
+	Edges map[Edge]int `json:"-"`
 }
 
 const sin_atan0_5 = 0.447213595
