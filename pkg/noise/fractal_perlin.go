@@ -14,16 +14,17 @@ type PerlinFractal struct {
 	Offset geodesic.Vector
 }
 
-func NewPerlinFractal(dim int, depth int, scale float64) *PerlinFractal {
+func NewPerlinFractal(seed int64, dim int, depth int, scale float64) *PerlinFractal {
+	r := rand.New(rand.NewSource(seed))
 	return &PerlinFractal{
-		Perlin:   *NewPerlin(dim),
+		Perlin:   *NewPerlin(r, dim),
 		Depth:    depth,
 		Scale:    scale,
 		InvScale: 1.0 / scale,
 		Offset:   geodesic.Vector{
-			X: float64(dim) * rand.Float64(),
-			Y: float64(dim) * rand.Float64(),
-			Z: float64(dim) * rand.Float64(),
+			X: float64(dim) * r.Float64(),
+			Y: float64(dim) * r.Float64(),
+			Z: float64(dim) * r.Float64(),
 		},
 	}
 }

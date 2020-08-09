@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"github.com/willbeason/hydrology/pkg/geodesic"
 	"github.com/willbeason/hydrology/pkg/noise"
+	"github.com/willbeason/hydrology/pkg/planet"
 	"github.com/willbeason/hydrology/pkg/render"
 	"github.com/willbeason/hydrology/pkg/water"
 	"image"
 	"math"
 	"math/rand"
+	"sort"
 	"time"
 )
 
@@ -21,57 +23,64 @@ func main() {
 		Height: 1080,
 	}
 
-	nSpheres := 9
-	spheres := []*geodesic.Geodesic{geodesic.Dodecahedron()}
-	for i := 0; i < nSpheres; i++ {
-		spheres = append(spheres, geodesic.Chamfer(spheres[i]))
-	}
+	size := 6
+	spheres := geodesic.New(size, false)
 
 	depth := 30
 	perlinNoise := noise.NewPerlinFractal(10, depth, 0.8)
 
-	sphere := spheres[nSpheres]
+	sphere := spheres[len(spheres)-1]
 
 	// heights by cell
-	heights := make([]float64, len(sphere.Centers))
-	waters := make([]float64, len(sphere.Centers))
+	p := &planet.Planet{
+		Size:    size,
+		Heights: make([]float64, len(sphere.Centers)),
+		Waters:  make([]float64, len(sphere.Centers)),
+		Flows:   make([]float64, len(sphere.Centers)),
+	}
 
 	for cell, pos := range sphere.Centers {
-		heights[cell] = perlinNoise.ValueAt(pos)
+		p.Heights[cell] = perlinNoise.ValueAt(pos)
 	}
 
 	oceanWater := 0.0
-	for _, h := range heights {
-		if h < 0.0 {
-			oceanWater += -h
+	sortedHeights := make([]float64, len(p.Heights))
+	copy(sortedHeights, p.Heights)
+	sort.Float64s(sortedHeights)
+
+	halfway := sortedHeights[len(sortedHeights)/2]
+	for _, h := range p.Heights {
+		if h < halfway {
+			oceanWater += halfway - h
 		}
 	}
-	avgWater := oceanWater / float64(len(sphere.Centers)/2)
-	fmt.Println(avgWater)
+	avgWater := oceanWater / float64(len(sortedHeights)/2)
+	fmt.Println(halfway, avgWater)
 
 	projection := render.Project(screen, render.Equirectangular{})
 
 	quanta := 0.01
 	iters := int(avgWater / quanta)
 	fmt.Println("Total Iters:", iters)
-	flow := make([]float64, len(waters))
 
-	renderImg(seed, projection, spheres, heights, waters, flow, 0)
+	renderImg(seed, projection, spheres, p.Heights, p.Waters, p.Flows, 0)
 	for iter := 1; iter < iters; iter++ {
 		fmt.Print(iter, "...", "Raining")
-		water.Rain(quanta, waters, heights, flow, sphere)
+		water.Rain(quanta, p.Waters, p.Heights, p.Flows, sphere)
 
-		if iter % 5 == 0 {
+		if iter%5 == 0 {
 			fmt.Print("...", "Equalizing")
-			water.Equalize(waters, heights, sphere)
-			renderImg(seed, projection, spheres, heights, waters, flow, iter)
+			water.Equalize(p.Waters, p.Heights, sphere)
+			renderImg(seed, projection, spheres, p.Heights, p.Waters, p.Flows, iter)
 		}
 
 		fmt.Println()
 	}
 
-	water.Equalize(waters, heights, sphere)
-	renderImg(seed, projection, spheres, heights, waters, flow, iters)
+	water.Equalize(p.Waters, p.Heights, sphere)
+	renderImg(seed, projection, spheres, p.Heights, p.Waters, p.Flows, iters)
+
+
 }
 
 func renderImg(seed int64, projection render.Projection, spheres []*geodesic.Geodesic, heights, waters, flow []float64, id int) {

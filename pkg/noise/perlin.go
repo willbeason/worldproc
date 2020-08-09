@@ -13,7 +13,7 @@ type Perlin struct {
 
 }
 
-func NewPerlin(dim int) *Perlin {
+func NewPerlin(r *rand.Rand, dim int) *Perlin {
 	dim2 := dim*dim
 	result := &Perlin{
 		Dim: dim,
@@ -25,8 +25,8 @@ func NewPerlin(dim int) *Perlin {
 		for j := 0; j < dim; j++ {
 			for k := 0; k < dim; k++ {
 				angle := geodesic.Angle{
-					Theta: 2.0*math.Pi*rand.Float64(),
-					Phi:   math.Acos(2.0*rand.Float64() - 1.0),
+					Theta: 2.0*math.Pi*r.Float64(),
+					Phi:   math.Acos(2.0*r.Float64() - 1.0),
 				}
 				result.Noise[i*dim2 + j*dim + k] = angle.Vector()
 			}
