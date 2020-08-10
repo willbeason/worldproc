@@ -7,7 +7,7 @@ import (
 
 type Light interface {
 	Intensity(vector geodesic.Vector) float64
-	DeclinationAzimuth(angle geodesic.Angle) geodesic.Angle
+	AltitudeAzimuth(angle geodesic.Angle) geodesic.Angle
 }
 
 type Constant struct {}
@@ -22,19 +22,26 @@ type Directional struct {
 	SunAngle geodesic.Angle
 }
 
-func (s *Directional) DeclinationAzimuth(a geodesic.Angle) geodesic.Angle {
+func (s *Directional) AltitudeAzimuth(a geodesic.Angle) geodesic.Angle {
 	v := a.Vector()
-	L := s.SunAngle.Phi - a.Phi
-	azimuth := math.Atan(math.Sin(L) / (math.Cos(a.Theta)*math.Tan(math.Pi/2 - s.SunAngle.Theta) - math.Sin(a.Theta)*math.Cos(L)))
-	if a.Phi < s.SunAngle.Phi {
-		//azimuth = -azimuth
+	w := a.Theta - s.SunAngle.Theta
+
+	altitude := math.Asin(s.Sun.Dot(v))
+	//fmt.Println("declination =", s.SunAngle.Theta)
+	//fmt.Println("w =", w, "=", a.Theta, "-", s.SunAngle.Theta)
+	//fmt.Println("altitude =", altitude)
+	azimuth := math.Asin(-math.Cos(s.SunAngle.Theta)*math.Sin(w)/math.Cos(altitude))
+	//fmt.Println("azimuth =", azimuth)
+
+	if a.Phi > s.SunAngle.Phi  {
+		azimuth = math.Pi - azimuth
 	}
 
 	return geodesic.Angle{
-		// Theta = 0 corresponds with sun directly overhead.
-		Theta: math.Pi/2 - math.Acos(s.Sun.Dot(v)),
+		// Theta = Pi/2 corresponds with sun directly overhead.
+		Theta: altitude,
 		// Phi = 0 corresponds with azimuth to North.
-		Phi:   azimuth,
+		Phi: azimuth,
 	}
 }
 
@@ -44,7 +51,7 @@ func (s *Directional) Set(date float64) {
 	// Start at the spring equinox for the northern hemisphere.
 	eclipticLatitude := -23.5 * math.Sin(date * math.Pi / 180) * math.Pi / 180
 	// Start at noon on the prime meridian.
-	eclipticLongitude := -math.Mod(date, 1.0) * 2 * math.Pi
+	eclipticLongitude := -date * 2 * math.Pi
 
 	s.SunAngle = geodesic.Angle{
 		Phi: eclipticLongitude,

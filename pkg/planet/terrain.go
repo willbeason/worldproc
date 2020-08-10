@@ -58,7 +58,7 @@ func RenderTerrain(p *Planet, projection render.Projection, spheres []*geodesic.
 			pxWaterHeights[pidx] = render.Lerp(pxW1, pxW2, dist/(dist+dist2))
 			pxLandHeights[pidx] = render.Lerp(pxH1, pxH2, dist/(dist+dist2))
 			pxLights[pidx] = light.Intensity(v)
-			pxSunlight[pidx] = light.DeclinationAzimuth(angle)
+			pxSunlight[pidx] = light.AltitudeAzimuth(angle)
 		}
 	}
 

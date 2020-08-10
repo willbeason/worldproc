@@ -25,11 +25,18 @@ func main() {
 	p := loadOrCreate(*seed, size, spheres[size])
 
 	screen := render.Screen{
-		Width:  2160,
-		Height: 1080,
+		Width:  640,
+		Height: 320,
 	}
 	projection := render.Project(screen, render.Equirectangular{})
-	renderImg(*seed, "sunlight", projection, spheres, p)
+
+	light := &sun.Directional{}
+	for i := 0; i < 100; i++ {
+		t := (float64(i) / 100.0) + 90 - 0.5
+		fmt.Println("t =", t)
+		light.Set(t)
+		renderImg(*seed, fmt.Sprintf("sunlight-%02d", i), projection, spheres, light, p)
+	}
 }
 
 func loadOrCreate(seed int64, size int, sphere *geodesic.Geodesic) *planet.Planet {
@@ -54,9 +61,7 @@ func loadOrCreate(seed int64, size int, sphere *geodesic.Geodesic) *planet.Plane
 	return p
 }
 
-func renderImg(seed int64, name string, projection render.Projection, spheres []*geodesic.Geodesic, p *planet.Planet) {
-	light := &sun.Directional{}
-	light.Set(0.1)
+func renderImg(seed int64, name string, projection render.Projection, spheres []*geodesic.Geodesic, light sun.Light, p *planet.Planet) {
 	img := planet.RenderTerrain(p, projection, spheres, light)
-	render.WriteImage(img, fmt.Sprintf("renders/%d-%s.png", seed, name))
+	render.WriteImage(img, fmt.Sprintf("renders/midsummer/%d-%s.png", seed, name))
 }

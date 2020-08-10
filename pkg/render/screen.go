@@ -72,8 +72,11 @@ func (s Screen) shadow(c color.RGBA, heights []float64, x, y, idx int, lightAngl
 	hr := heights[idx+1]
 	hu := heights[idx+s.Width]
 	hd := heights[idx-s.Width]
-	m := gradient(hl, hr, hu, hd).Dot(lightAngle.Vector())
-	m = math.Max(0.1, m)
+	m := 0.1
+	if lightAngle.Theta > 0 {
+		m = gradient(hl, hr, hu, hd).Dot(lightAngle.Vector())
+		m = math.Max(0.1, m)
+	}
 
 	c.R = uint8(float64(c.R) * m)
 	c.G = uint8(float64(c.G) * m)
@@ -139,6 +142,6 @@ func (s Screen) Paint(heights []float64, cs *ColorScale, img *image.RGBA) {
 
 func gradient(l, r, u, d float64) geodesic.Vector {
 	dx := l - r
-	dy := u - d
-	return geodesic.Vector{X: dx, Y: dy, Z: 0.05}.Normalize()
+	dy := d - u
+	return geodesic.Vector{X: dx, Y: dy, Z: 0.2}.Normalize()
 }
