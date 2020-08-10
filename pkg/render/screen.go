@@ -4,6 +4,7 @@ import (
 	"github.com/willbeason/hydrology/pkg/geodesic"
 	"image"
 	"image/color"
+	"math"
 	"sync"
 )
 
@@ -34,7 +35,7 @@ var landWaterCS = NewColorScale(
 		{1.0, color.RGBA{255, 255, 255, 255}},
 	})
 
-func (s Screen) PaintAndShade(heights []float64, img *image.RGBA) {
+func (s Screen) PaintAndShade(heights []float64, lightAngles []geodesic.Angle, img *image.RGBA) {
 	wg := sync.WaitGroup{}
 	wg.Add(s.Width)
 
@@ -51,7 +52,7 @@ func (s Screen) PaintAndShade(heights []float64, img *image.RGBA) {
 				}
 
 				c := landWaterCS.ColorAt(h)
-				c = s.shade(c, heights, xl, y, idx)
+				c = s.shadow(c, heights, xl, y, idx, lightAngles[idx])
 
 				img.Set(xl, y, c)
 			}
@@ -62,7 +63,7 @@ func (s Screen) PaintAndShade(heights []float64, img *image.RGBA) {
 	wg.Wait()
 }
 
-func (s Screen) shade(c color.RGBA, heights []float64, x, y, idx int) color.RGBA {
+func (s Screen) shadow(c color.RGBA, heights []float64, x, y, idx int, lightAngle geodesic.Angle) color.RGBA {
 	if x <= 0 || x >= s.Width - 1 || y <= 0 || y >= s.Height - 1 {
 		return c
 	}
@@ -71,7 +72,8 @@ func (s Screen) shade(c color.RGBA, heights []float64, x, y, idx int) color.RGBA
 	hr := heights[idx+1]
 	hu := heights[idx+s.Width]
 	hd := heights[idx-s.Width]
-	m := gradient(hl, hr, hu, hd).Z
+	m := gradient(hl, hr, hu, hd).Dot(lightAngle.Vector())
+	m = math.Max(0.1, m)
 
 	c.R = uint8(float64(c.R) * m)
 	c.G = uint8(float64(c.G) * m)
@@ -90,7 +92,7 @@ var landCS = NewColorScale(
 		{1.0, snow},
 	})
 
-func (s Screen) PaintLandWater(heights, waters []float64, img *image.RGBA) {
+func (s Screen) PaintLandWater(heights, waters, lights []float64, lightAngles []geodesic.Angle, img *image.RGBA) {
 	for x := 0; x < s.Width; x++ {
 		for y := 0; y < s.Height; y++ {
 			idx := y*s.Width+x
@@ -102,13 +104,13 @@ func (s Screen) PaintLandWater(heights, waters []float64, img *image.RGBA) {
 
 			if w > 0.01 {
 				c = deepWater
+				c = lerpC(color.RGBA{A: 255}, c, lights[idx])
 			} else {
-				c = s.shade(c, heights, x, y, idx)
+				c = s.shadow(c, heights, x, y, idx, lightAngles[idx])
 				if w > 0.0 {
 					c = lerpC(c, deepWater, w / 0.01)
 				}
 			}
-
 			img.Set(x, y, c)
 		}
 	}
@@ -136,7 +138,7 @@ func (s Screen) Paint(heights []float64, cs *ColorScale, img *image.RGBA) {
 }
 
 func gradient(l, r, u, d float64) geodesic.Vector {
-	dx := r - l
+	dx := l - r
 	dy := u - d
-	return geodesic.Vector{X: dx, Y: dy, Z: 0.07}.Normalize()
+	return geodesic.Vector{X: dx, Y: dy, Z: 0.05}.Normalize()
 }

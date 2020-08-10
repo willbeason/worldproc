@@ -4,6 +4,7 @@ import (
 	"github.com/willbeason/hydrology/pkg/geodesic"
 	"github.com/willbeason/hydrology/pkg/noise"
 	"github.com/willbeason/hydrology/pkg/render"
+	"github.com/willbeason/hydrology/pkg/sun"
 	"image"
 	"math"
 )
@@ -15,12 +16,14 @@ func AddTerrain(p *Planet, sphere *geodesic.Geodesic, perlinNoise *noise.PerlinF
 	}
 }
 
-func RenderTerrain(p *Planet, projection render.Projection, spheres []*geodesic.Geodesic) *image.RGBA {
+func RenderTerrain(p *Planet, projection render.Projection, spheres []*geodesic.Geodesic, light sun.Light) *image.RGBA {
 	screen := projection.Screen
 	img := image.NewRGBA(image.Rect(0, 0, screen.Width, screen.Height))
 
 	pxWaterHeights := make([]float64, screen.Width*screen.Height)
 	pxLandHeights := make([]float64, screen.Width*screen.Height)
+	pxLights := make([]float64, screen.Width*screen.Height)
+	pxSunlight := make([]geodesic.Angle, screen.Width*screen.Height)
 
 	heights := p.Heights
 	waters := p.Waters
@@ -54,9 +57,11 @@ func RenderTerrain(p *Planet, projection render.Projection, spheres []*geodesic.
 
 			pxWaterHeights[pidx] = render.Lerp(pxW1, pxW2, dist/(dist+dist2))
 			pxLandHeights[pidx] = render.Lerp(pxH1, pxH2, dist/(dist+dist2))
+			pxLights[pidx] = light.Intensity(v)
+			pxSunlight[pidx] = light.DeclinationAzimuth(angle)
 		}
 	}
 
-	screen.PaintLandWater(pxLandHeights, pxWaterHeights, img)
+	screen.PaintLandWater(pxLandHeights, pxWaterHeights, pxLights, pxSunlight, img)
 	return img
 }

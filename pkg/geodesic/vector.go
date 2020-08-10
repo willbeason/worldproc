@@ -8,6 +8,10 @@ type Vector struct {
 	Z float64 `json:"z"`
 }
 
+func (v Vector) Dot(v2 Vector) float64 {
+	return v.X * v2.X + v.Y * v2.Y + v.Z * v2.Z
+}
+
 func (v Vector) Add(v2 Vector) Vector {
 	return Vector{
 		X: v.X + v2.X,

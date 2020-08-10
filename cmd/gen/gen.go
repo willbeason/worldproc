@@ -7,6 +7,7 @@ import (
 	"github.com/willbeason/hydrology/pkg/noise"
 	"github.com/willbeason/hydrology/pkg/planet"
 	"github.com/willbeason/hydrology/pkg/render"
+	"github.com/willbeason/hydrology/pkg/sun"
 	"math/rand"
 	"time"
 )
@@ -28,7 +29,7 @@ func main() {
 		Height: 1080,
 	}
 	projection := render.Project(screen, render.Equirectangular{})
-	renderImg(*seed, "satellite", projection, spheres, p)
+	renderImg(*seed, "sunlight", projection, spheres, p)
 }
 
 func loadOrCreate(seed int64, size int, sphere *geodesic.Geodesic) *planet.Planet {
@@ -54,6 +55,8 @@ func loadOrCreate(seed int64, size int, sphere *geodesic.Geodesic) *planet.Plane
 }
 
 func renderImg(seed int64, name string, projection render.Projection, spheres []*geodesic.Geodesic, p *planet.Planet) {
-	img := planet.RenderTerrain(p, projection, spheres)
+	light := &sun.Directional{}
+	light.Set(0.1)
+	img := planet.RenderTerrain(p, projection, spheres, light)
 	render.WriteImage(img, fmt.Sprintf("renders/%d-%s.png", seed, name))
 }
