@@ -31,8 +31,8 @@ func main() {
 	projection := render.Project(screen, render.Equirectangular{})
 
 	light := &sun.Directional{}
-	for i := 0; i < 100; i++ {
-		t := (float64(i) / 100.0) + 90 - 0.5
+	for i := 0; i < 200; i++ {
+		t := float64(i) / 100.0 + 89
 		fmt.Println("t =", t)
 		light.Set(t)
 		renderImg(*seed, fmt.Sprintf("sunlight-%02d", i), projection, spheres, light, p)

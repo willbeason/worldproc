@@ -27,14 +27,26 @@ func (s *Directional) AltitudeAzimuth(a geodesic.Angle) geodesic.Angle {
 	w := a.Theta - s.SunAngle.Theta
 
 	altitude := math.Asin(s.Sun.Dot(v))
-	//fmt.Println("declination =", s.SunAngle.Theta)
+	declination := s.SunAngle.Theta
+	//fmt.Println("declination =", declination)
 	//fmt.Println("w =", w, "=", a.Theta, "-", s.SunAngle.Theta)
 	//fmt.Println("altitude =", altitude)
-	azimuth := math.Asin(-math.Cos(s.SunAngle.Theta)*math.Sin(w)/math.Cos(altitude))
+	azimuth := math.Asin(-math.Cos(declination)*math.Sin(w)/math.Cos(altitude))
 	//fmt.Println("azimuth =", azimuth)
 
-	if a.Phi > s.SunAngle.Phi  {
+	//if rand.Float64() < 0.0001 {
+	//	fmt.Println(a.Phi, s.SunAngle.Phi)
+	//}
+
+	dPhi := a.Phi - s.SunAngle.Phi
+	isPM := dPhi > 0 && math.Abs(dPhi) < math.Pi || (s.SunAngle.Phi > 0 && math.Abs(dPhi) > math.Pi)
+	if isPM {
 		azimuth = math.Pi - azimuth
+		//isPM = a.Phi > s.SunAngle.Phi
+		//if a.Phi > 0 || (a.Phi + s.SunAngle.Phi ){
+		//}
+		//isPM = true
+		//isPM = a.Phi < math.Pi || a.Phi < s.SunAngle.Phi
 	}
 
 	return geodesic.Angle{
@@ -51,7 +63,7 @@ func (s *Directional) Set(date float64) {
 	// Start at the spring equinox for the northern hemisphere.
 	eclipticLatitude := -23.5 * math.Sin(date * math.Pi / 180) * math.Pi / 180
 	// Start at noon on the prime meridian.
-	eclipticLongitude := -date * 2 * math.Pi
+	eclipticLongitude := (0.5-math.Mod(date+0.5, 1.0)) * 2 * math.Pi
 
 	s.SunAngle = geodesic.Angle{
 		Phi: eclipticLongitude,
