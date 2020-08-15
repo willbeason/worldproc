@@ -13,13 +13,13 @@ type Screen struct {
 }
 
 var (
-	deepWater = color.RGBA{14, 31, 75, 255}
-	sand = color.RGBA{246, 223, 57, 255}
+	deepWater   = color.RGBA{14, 31, 75, 255}
+	sand        = color.RGBA{246, 223, 57, 255}
 	brightGreen = color.RGBA{109, 150, 74, 255}
-	green = color.RGBA{67, 117, 63, 255}
-	darkGreen = color.RGBA{50, 97, 43, 255}
-	stone = color.RGBA{131, 115, 79, 255}
-	snow = color.RGBA{255, 255, 255, 255}
+	green       = color.RGBA{67, 117, 63, 255}
+	darkGreen   = color.RGBA{50, 97, 43, 255}
+	stone       = color.RGBA{131, 115, 79, 255}
+	snow        = color.RGBA{255, 255, 255, 255}
 )
 
 var landWaterCS = NewColorScale(
@@ -64,7 +64,7 @@ func (s Screen) PaintAndShade(heights []float64, lightAngles []geodesic.Angle, i
 }
 
 func (s Screen) shadow(c color.RGBA, heights []float64, x, y, idx int, lightAngle geodesic.Angle) color.RGBA {
-	if x <= 0 || x >= s.Width - 1 || y <= 0 || y >= s.Height - 1 {
+	if x <= 0 || x >= s.Width-1 || y <= 0 || y >= s.Height-1 {
 		return c
 	}
 
@@ -98,7 +98,7 @@ var landCS = NewColorScale(
 func (s Screen) PaintLandWater(heights, waters, lights []float64, lightAngles []geodesic.Angle, img *image.RGBA) {
 	for x := 0; x < s.Width; x++ {
 		for y := 0; y < s.Height; y++ {
-			idx := y*s.Width+x
+			idx := y*s.Width + x
 
 			w := waters[idx]
 			h := heights[idx]
@@ -111,9 +111,38 @@ func (s Screen) PaintLandWater(heights, waters, lights []float64, lightAngles []
 			} else {
 				c = s.shadow(c, heights, x, y, idx, lightAngles[idx])
 				if w > 0.0 {
-					c = lerpC(c, deepWater, w / 0.01)
+					c = lerpC(c, deepWater, w/0.01)
 				}
 			}
+			img.Set(x, y, c)
+		}
+	}
+}
+
+var temperatureCS = NewColorScale(
+	[]ColorPoint{
+		{223, color.RGBA{R: 255, G: 255, B: 255, A: 255}}, // -50 C
+		{233, color.RGBA{R: 255, G: 0, B: 255, A: 255}}, // -40 C
+		{243, color.RGBA{R: 128, G: 0, B: 255, A: 255}}, // -30 C
+		{253, color.RGBA{R: 0, G: 0, B: 255, A: 255}}, // -20 C
+		{263, color.RGBA{R: 0, G: 255, B: 255, A: 255}}, // -10 C
+		{273, color.RGBA{R: 0, G: 255, B: 0, A: 255}}, // 0 C
+		{283, color.RGBA{R: 128, G: 255, B: 0, A: 255}}, // 10 C
+		{293, color.RGBA{R: 255, G: 255, B: 0, A: 255}}, // 20 C
+		{303, color.RGBA{R: 255, G: 128, B: 0, A: 255}}, // 30 C
+		{313, color.RGBA{R: 255, G: 0, B: 0, A: 255}}, // 40 C
+		{323, color.RGBA{R: 128, G: 0, B: 0, A: 255}}, // 50 C
+	})
+
+func (s Screen) PaintTemperature(temperatures []float64, img *image.RGBA) {
+	for x := 0; x < s.Width; x++ {
+		for y := 0; y < s.Height; y++ {
+			idx := y*s.Width + x
+
+			t := temperatures[idx]
+
+			c := temperatureCS.ColorAt(t)
+
 			img.Set(x, y, c)
 		}
 	}

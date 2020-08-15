@@ -15,36 +15,48 @@ const WD = 2.8977719E-3
 
 const DefaultTemperature = 273.0
 
-type Climate struct {
-	SpecificHeat float64
-	//Opacity float64
+const DesertSpecificHeat = 200000
+const CoastSpecificHeat =  500000
+const OceanSpecificHeat = 1000000
 
-	// Latitude is the angle with the Equator, in radians.
-	Latitude float64
+type Climate struct {
+	// SpecificHeat is the energy, in Joules/m^2 required to heat this area by 1 K.
+	SpecificHeat float64
+
+	// Temperature is how hot, in Kelvin, this climate is.
+	Temperature float64
 }
 
-func (t Climate) LowHigh(startNoon float64) (float64, float64) {
+func (t *Climate) Simulate(flux float64, altitude float64, seconds float64) {
+	incoming := flux * seconds
+
+	peakWavelength := WD / t.Temperature
+	offset := -(peakWavelength - 1E-5) / (1E-5)
+	//fmt.Println(peakWavelength, offset)
+	opacity := 0.26 + offset + altitude / 2.0
+	//fmt.Println(peakWavelength)
+	opacity = math.Max(0.0, math.Min(0.9, opacity))
+	outgoing := seconds * math.Pow(t.Temperature, 4) * opacity * SB
+
+	t.Temperature += (incoming - outgoing) / t.SpecificHeat
+}
+
+func LowHigh(specificHeat, latitude, startNoon float64) (float64, float64) {
 	temp := startNoon
-	energy := t.SpecificHeat * temp
-	cosLatitude := math.Cos(t.Latitude)
+	cosLatitude := math.Cos(latitude)
+
+	c := &Climate{
+		SpecificHeat: specificHeat,
+		Temperature:  startNoon,
+	}
 
 	lowest, highest := temp, temp
-	for i := 0; i < 24; i++ {
-		peakWavelength := WD / temp
-		opacity := (11.75E-6 - peakWavelength)/(8E-6)
-		opacity = math.Max(0.1, math.Min(opacity, 1.0))
-		//fmt.Println(temp, opacity)
-
-		sunAngle := float64(i) * math.Pi / 12
-		incomingFlux := Flux * math.Cos(sunAngle)*cosLatitude * 3600
-		if incomingFlux < 0 {
-			incomingFlux = 0
-		}
-		outgoingFlux := 3600 * math.Pow(temp, 4) * opacity * SB
-
-		flux := incomingFlux - outgoingFlux
-		energy += flux
-		temp = energy / t.SpecificHeat
+	for i := 0; i < 144; i++ {
+		sunAngle := float64(i) * math.Pi / 72
+		flux := Flux * math.Cos(sunAngle) * cosLatitude
+		flux = math.Max(0.0, flux)
+		c.Simulate(flux, 0.0, 600)
+		temp = c.Temperature
 
 		if temp < lowest {
 			lowest = temp
@@ -58,5 +70,5 @@ func (t Climate) LowHigh(startNoon float64) (float64, float64) {
 	if math.Abs(diff) < 0.001 {
 		return lowest, highest
 	}
-	return t.LowHigh(temp)
+	return LowHigh(specificHeat, latitude, temp)
 }

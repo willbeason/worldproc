@@ -6,7 +6,7 @@ import (
 )
 
 type Light interface {
-	Intensity(vector geodesic.Vector) float64
+	VisualIntensity(vector geodesic.Vector) float64
 	AltitudeAzimuth(angle geodesic.Angle) geodesic.Angle
 }
 
@@ -72,7 +72,7 @@ func (s *Directional) Set(date float64) {
 	s.Sun = s.SunAngle.Vector()
 }
 
-func (s *Directional) Intensity(v geodesic.Vector) float64 {
+func (s *Directional) VisualIntensity(v geodesic.Vector) float64 {
 	dot := s.Sun.Dot(v)
 	dot *= 2
 	return math.Max(math.Min(1.0, dot), 0.1)
