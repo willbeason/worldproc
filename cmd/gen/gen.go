@@ -27,61 +27,89 @@ func main() {
 
 	sphere := spheres[size]
 	p := loadOrCreate(*seed, size, sphere)
-
-	climates := make([]climate.Climate, len(p.Heights))
-	for i, w := range p.Waters {
-		if w > 0.01 {
-			climates[i].SpecificHeat = climate.OceanSpecificHeat
-		} else if w > 0 {
-			climates[i].SpecificHeat = climate.CoastSpecificHeat
-		} else {
-			climates[i].SpecificHeat = climate.DesertSpecificHeat
-		}
-		// Initialize to 0 Celsius.
-		climates[i].Temperature = 273
-	}
-
 	screen := render.Screen{
 		Width:  1920,
 		Height: 960,
 	}
 	projection := render.Project(screen, render.Equirectangular{})
+	renderImg(*seed, "", projection, spheres, sun.Constant{}, p)
 
+	if len(p.Climates) == 0 {
+		fmt.Println("Initializing Climate")
+		initializeClimate(p, sphere, spheres, projection)
+		planet.Save(*seed, p)
+	} else {
+		fmt.Println("Loaded Climate")
+	}
+
+	imax := 144
+	seconds := 600.0
+	nDiffuse := 1
+	nWind := 5
 	light := &sun.Directional{}
-
-	// Begin simulating every hour.
 	idx := 0
-	imax := 24
-	seconds := 3600.0
-	nDiffuse := 18
-	for day := 0; day < 362; day++ {
-		if day == 358 {
-			// Every 10 minutes.
-			// Begin two days before rendering begins.
-			imax = 144
-			seconds = 600.0
-			nDiffuse = 3
-		}
-		if day == 360 {
-			fmt.Println("Begin Render")
-		}
+	for day := 0; day < 20; day++ {
 		for i := 0; i < imax; i++ {
-			// Ten minute intervals.
 			t := float64(day) + float64(i) / float64(imax)
 			fmt.Printf("t = %.03f", t)
 			light.Set(t)
 
 			fmt.Print(" ... heat")
-			heat(climates, p, sphere, light, seconds)
+			heat(p.Climates, p, sphere, light, seconds)
+			for k := 0; k < nWind; k++ {
+				fmt.Print(" ... wind")
+				climate.Wind(p.Climates, sphere)
+			}
 			for k := 0; k < nDiffuse; k++ {
 				fmt.Print(" ... diffuse")
-				diffuseHeat(climates, sphere, seconds)
+				diffuseHeat(p.Climates, sphere, seconds)
+			}
+			fmt.Println()
+
+			// Heat up for a year before rendering.
+			RenderTemperature(*seed, idx, "wind", projection, spheres, p.Climates)
+			idx++
+		}
+	}
+}
+
+func initializeClimate(p *planet.Planet, sphere *geodesic.Geodesic, spheres []*geodesic.Geodesic, projection render.Projection) {
+	light := &sun.Directional{}
+	p.Climates = make([]climate.Climate, len(p.Heights))
+	for i, w := range p.Waters {
+		if w > 0.01 {
+			p.Climates[i].LandSpecificHeat = climate.OceanSpecificHeat
+		} else if w > 0 {
+			p.Climates[i].LandSpecificHeat = climate.CoastSpecificHeat
+		} else {
+			p.Climates[i].LandSpecificHeat = climate.DesertSpecificHeat
+		}
+		p.Climates[i].Air = 1.0
+		// Initialize to 0 Celsius.
+		p.Climates[i].SetTemperature(climate.ZeroCelsius)
+	}
+	// Begin simulating every hour.
+	idx := 0
+	imax := 24
+	seconds := 3600.0
+	nDiffuse := 6
+	for day := 0; day < 360; day++ {
+		for i := 0; i < imax; i++ {
+			t := float64(day) + float64(i) / float64(imax)
+			fmt.Printf("t = %.03f", t)
+			light.Set(t)
+
+			fmt.Print(" ... heat")
+			heat(p.Climates, p, sphere, light, seconds)
+			for k := 0; k < nDiffuse; k++ {
+				fmt.Print(" ... diffuse")
+				diffuseHeat(p.Climates, sphere, seconds)
 			}
 			fmt.Println()
 
 			if day >= 360 || i == 0 {
 				// Heat up for a year before rendering.
-				RenderTemperature(*seed, idx, projection, spheres, climates)
+				RenderTemperature(*seed, idx, "heat", projection, spheres, p.Climates)
 				idx++
 			}
 		}
@@ -97,38 +125,35 @@ func heat(climates []climate.Climate, p *planet.Planet, sphere *geodesic.Geodesi
 		if p.Waters[i] > 0.00 {
 			height = 0
 		}
-		climates[i].Simulate(flux, height, seconds)
-		//if i == 19284 {
-		//}
-		//if climates[i].Temperature > 273 + 40 {
-		//	fmt.Println()
-		//	fmt.Println(i)
-		//	fmt.Println(c)
-		//	fmt.Println(light.Sun)
-		//	fmt.Println(light.SunAngle)
-		//	fmt.Println(math.Acos(light.VisualIntensity(c)))
-		//	fmt.Println(before)
-		//	fmt.Println(climates[i].Temperature)
-		//	fmt.Println("Flux", flux)
-		//	panic("HERE")
+		//fmt.Println(climates[i])
+		//fmt.Println(climates[i].AirTemperature(), climates[i].LandTemperature())
+		climates[i].Simulate(flux, math.Asin(sphere.Centers[i].Z), height, seconds)
+		//fmt.Println(climates[i])
+		//fmt.Println(climates[i].AirTemperature(), climates[i].LandTemperature())
+		//if climates[i].AirTemperature() > 50 + climate.ZeroCelsius {
+		//	panic(i)
 		//}
 	}
 }
 
 func diffuseHeat(climates []climate.Climate, sphere *geodesic.Geodesic, seconds float64) {
 	// rates is the rate of energy exchange between adjacent climates.
-	rates := make([]float64, len(climates))
+	landRates := make([]float64, len(climates))
+	airRates := make([]float64, len(climates))
 
 	for i, c := range climates {
 		ns := sphere.Faces[i].Neighbors
-		rates[i] -= float64(len(ns)) * c.Temperature
+		landRates[i] -= float64(len(ns)) * c.LandTemperature()
+		airRates[i] -= float64(len(ns)) * c.AirTemperature()
 		for _, n := range ns {
-			rates[n] += c.Temperature
+			landRates[n] += c.LandTemperature()
+			airRates[n] += c.AirTemperature()
 		}
 	}
 
-	for i, c := range climates {
-		climates[i].Temperature += rates[i] * 3 * seconds / c.SpecificHeat
+	for i := range climates {
+		climates[i].LandEnergy += landRates[i] * 3 * seconds
+		climates[i].AirEnergy += airRates[i] * 3 * seconds
 	}
 }
 
@@ -154,14 +179,14 @@ func loadOrCreate(seed int64, size int, sphere *geodesic.Geodesic) *planet.Plane
 	return p
 }
 
-func RenderTemperature(seed int64, idx int, projection render.Projection, spheres []*geodesic.Geodesic, climates []climate.Climate) {
+func RenderTemperature(seed int64, idx int, name string, projection render.Projection, spheres []*geodesic.Geodesic, climates []climate.Climate) {
 	img := renderClimate(projection, spheres, climates)
-	render.WriteImage(img, fmt.Sprintf("renders/temperature/%d-%03d.png", seed, idx))
+	render.WriteImage(img, fmt.Sprintf("renders/wind-test-2/%s-%d-%03d.png", name, seed, idx))
 }
 
 func renderImg(seed int64, name string, projection render.Projection, spheres []*geodesic.Geodesic, light sun.Light, p *planet.Planet) {
 	img := planet.RenderTerrain(p, projection, spheres, light)
-	render.WriteImage(img, fmt.Sprintf("renders/midsummer/%d-%s.png", seed, name))
+	render.WriteImage(img, fmt.Sprintf("renders/%d-%s.png", seed, name))
 }
 
 func renderClimate(projection render.Projection, spheres []*geodesic.Geodesic, climates []climate.Climate) *image.RGBA {
@@ -179,7 +204,7 @@ func renderClimate(projection render.Projection, spheres []*geodesic.Geodesic, c
 			idx := geodesic.Find(spheres, v)
 			dist := math.Sqrt(geodesic.DistSq(v, sphere.Centers[idx]))
 
-			pxT1 := climates[idx].Temperature
+			pxT1 := climates[idx].AirTemperature()
 
 			// Linearly interpolate the cell's stats with the second-closest cell.
 			idx2 := 0
@@ -192,7 +217,7 @@ func renderClimate(projection render.Projection, spheres []*geodesic.Geodesic, c
 				}
 			}
 			dist2 := math.Sqrt(distSq2)
-			pxT2 := climates[idx2].Temperature
+			pxT2 := climates[idx2].AirTemperature()
 
 			pxTemperatures[pidx] = render.Lerp(pxT1, pxT2, dist/(dist+dist2))
 		}

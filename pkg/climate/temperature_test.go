@@ -7,6 +7,15 @@ import (
 	"testing"
 )
 
+func TestEquilibrium(t *testing.T) {
+	// Ensure that the equilibrium max temperature of the pole is 0 C.
+	got := PoleEquilibrium(OceanSpecificHeat, 23.5 * math.Pi / 180) - ZeroCelsius
+
+	if diff := cmp.Diff(0.0, got, cmpopts.EquateApprox(0.0, 0.1)); diff != "" {
+		t.Error(diff)
+	}
+}
+
 func TestClimate_LowHigh(t *testing.T) {
 	tcs := []struct{
 		name string
@@ -18,25 +27,25 @@ func TestClimate_LowHigh(t *testing.T) {
 		{
 			name: "Equatorial Ocean",
 			climate: Climate{
-				SpecificHeat: OceanSpecificHeat,
+				LandSpecificHeat: OceanSpecificHeat,
 			},
 			latitude: 0,
-			wantLow: 27.3,
-			wantHigh: 30.4,
+			wantLow: 27.0,
+			wantHigh: 31.0,
 		},
 		{
 			name: "Equatorial Coast",
 			climate: Climate{
-				SpecificHeat: CoastSpecificHeat,
+				LandSpecificHeat: CoastSpecificHeat,
 			},
 			latitude: 0,
-			wantLow: 25.8,
-			wantHigh: 31.9,
+			wantLow: 22.9,
+			wantHigh: 35.0,
 		},
 		{
 			name: "Equatorial Desert",
 			climate: Climate{
-				SpecificHeat: DesertSpecificHeat,
+				LandSpecificHeat: DesertSpecificHeat,
 			},
 			latitude: 0,
 			wantLow: 13.8,
@@ -47,56 +56,56 @@ func TestClimate_LowHigh(t *testing.T) {
 		{
 			name: "Temperate Ocean",
 			climate: Climate{
-				SpecificHeat: OceanSpecificHeat,
+				LandSpecificHeat: OceanSpecificHeat,
 			},
 			latitude: 40,
-			wantLow: 18.8,
-			wantHigh: 21.1,
+			wantLow: -4.6,
+			wantHigh: -1.5,
 		},
 		{
 			name: "Temperate Coast",
 			climate: Climate{
-				SpecificHeat: CoastSpecificHeat,
+				LandSpecificHeat: CoastSpecificHeat,
 			},
 			latitude: 40,
-			wantLow: 17.6,
-			wantHigh: 22.3,
+			wantLow: -7.7,
+			wantHigh: 1.6,
 		},
 		{
 			name: "Temperate Desert",
 			climate: Climate{
-				SpecificHeat: DesertSpecificHeat,
+				LandSpecificHeat: DesertSpecificHeat,
 			},
 			latitude: 40,
-			wantLow: 8.4,
-			wantHigh: 31.7,
+			wantLow: -14.7,
+			wantHigh: 8.4,
 		},
 		{
 			name: "Arctic Ocean",
 			climate: Climate{
-				SpecificHeat: OceanSpecificHeat,
+				LandSpecificHeat: OceanSpecificHeat,
 			},
 			latitude: 70,
-			wantLow: -1.2,
-			wantHigh: -0.1,
+			wantLow: -67,
+			wantHigh: -65.7,
 		},
 		{
 			name: "Arctic Coast",
 			climate: Climate{
-				SpecificHeat: CoastSpecificHeat,
+				LandSpecificHeat: CoastSpecificHeat,
 			},
 			latitude: 70,
-			wantLow: -1.7,
-			wantHigh: 0.4,
+			wantLow: -68.5,
+			wantHigh: -64.3,
 		},
 		{
 			name: "Arctic Desert",
 			climate: Climate{
-				SpecificHeat: DesertSpecificHeat,
+				LandSpecificHeat: DesertSpecificHeat,
 			},
 			latitude: 70,
-			wantLow: -5.8,
-			wantHigh: 4.7,
+			wantLow: -71.6,
+			wantHigh: -61.2,
 		},
 	}
 
@@ -104,7 +113,7 @@ func TestClimate_LowHigh(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			latitude := tc.latitude * math.Pi / 180.0
 
-			gotLow, gotHigh := LowHigh(tc.climate.SpecificHeat, latitude, DefaultTemperature)
+			gotLow, gotHigh := LowHigh(tc.climate.LandSpecificHeat, latitude, ZeroCelsius)
 			gotLow -= 273
 			gotHigh -= 273
 

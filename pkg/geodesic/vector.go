@@ -12,12 +12,24 @@ func (v Vector) Dot(v2 Vector) float64 {
 	return v.X * v2.X + v.Y * v2.Y + v.Z * v2.Z
 }
 
+func (v Vector) Cross(v2 Vector) Vector {
+	return Vector{
+		X: v.Y*v2.Z - v.Z*v2.Y,
+		Y: v.Z*v2.X - v.X*v2.Z,
+		Z: v.X*v2.Y - v.Y*v2.X,
+	}
+}
+
 func (v Vector) Add(v2 Vector) Vector {
 	return Vector{
 		X: v.X + v2.X,
 		Y: v.Y + v2.Y,
 		Z: v.Z + v2.Z,
 	}
+}
+
+func (v Vector) Sub(v2 Vector) Vector {
+	return v.Add(v2.Scale(-1))
 }
 
 func (v Vector) Scale(c float64) Vector {

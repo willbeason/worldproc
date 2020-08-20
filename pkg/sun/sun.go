@@ -16,6 +16,14 @@ func (s Constant) Intensity(_ geodesic.Vector) float64 {
 	return 1.0
 }
 
+func (s Constant) AltitudeAzimuth(_ geodesic.Angle) geodesic.Angle {
+	return geodesic.Angle{Theta: math.Pi / 2}
+}
+
+func (s Constant) VisualIntensity(_ geodesic.Vector) float64 {
+	return 1.0
+}
+
 type Directional struct {
 	// Sun is the directional vector from the planet's core to the Sun.
 	Sun geodesic.Vector

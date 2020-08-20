@@ -55,8 +55,8 @@ func Load(seed int64, size int) *Planet {
 	if len(p.Flows) > 0 {
 		p.Flows = p.Flows[:nFaces]
 	}
-	if len(p.Temperatures) > 0 {
-		p.Temperatures = p.Temperatures[:nFaces]
+	if len(p.Climates) > 0 {
+		p.Climates = p.Climates[:nFaces]
 	}
 
 	return p

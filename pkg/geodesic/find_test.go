@@ -183,13 +183,13 @@ func TestFind_M3(t *testing.T) {
 		{
 			name:     "equator 270 degrees",
 			v:        Vector{X: 0, Y: -1, Z: 0},
-			want:     90,
+			want:     86,
 			wantDist: 0.0,
 		},
 		{
 			name: "0.64,0.6,0.48",
 			v: Vector{X: 0.64, Y: 0.6, Z: 0.48},
-			want: 72,
+			want: 79,
 			wantDist: 0.119,
 		},
 	}

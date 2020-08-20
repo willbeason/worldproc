@@ -1,8 +1,73 @@
 package geodesic
 
 import (
+	"github.com/google/go-cmp/cmp"
 	"testing"
 )
+
+func TestDodecahedron(t *testing.T) {
+	tcs := []struct{
+		id int
+		want []int
+	}{
+		{
+			id: 0,
+			want: []int{1, 5, 4, 3, 2},
+		},
+		{
+			id: 1,
+			want: []int{0, 2, 6, 10, 5},
+		},
+		{
+			id: 2,
+			want: []int{0, 3, 7, 6, 1},
+		},
+		{
+			id: 3,
+			want: []int{0, 4, 8, 7, 2},
+		},
+		{
+			id: 4,
+			want: []int{0, 5, 9, 8, 3},
+		},
+		{
+			id: 5,
+			want: []int{0, 1, 10, 9, 4},
+		},
+		{
+			id: 6,
+			want: []int{1, 2, 7, 11, 10},
+		},
+		{
+			id: 7,
+			want: []int{2, 3, 8, 11, 6},
+		},
+		{
+			id: 8,
+			want: []int{3, 4, 9, 11, 7},
+		},
+		{
+			id: 9,
+			want: []int{4, 5, 10, 11, 8},
+		},
+		{
+			id: 10,
+			want: []int{1, 6, 11, 9, 5},
+		},
+		{
+			id: 11,
+			want: []int{6, 7, 8, 9, 10},
+		},
+	}
+
+	d := Dodecahedron()
+
+	for _, tc := range tcs {
+		if diff := cmp.Diff(tc.want, d.Faces[tc.id].Neighbors); diff != "" {
+			t.Error(diff)
+		}
+	}
+}
 
 func TestGoldberg(t *testing.T) {
 	tcs := []struct {
