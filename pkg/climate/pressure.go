@@ -82,12 +82,12 @@ func Wind(climates []Climate, sphere *geodesic.Geodesic) {
 			return neighbors[i].toNeighbor.Dot(pv) > neighbors[j].toNeighbor.Dot(pv)
 		})
 
-		pvn := pv.Normalize()
-		theta0 := neighbors[0].toNeighbor.Dot(pvn)
-		theta1 := neighbors[1].toNeighbor.Dot(pvn)
-		invSum := 1.0 / (theta0 + theta1)
-		to0 := deltaAir * theta1 * invSum
-		to1 := deltaAir * theta0 * invSum
+		//pvn := pv.Normalize()
+		//theta0 := neighbors[0].toNeighbor.Dot(pvn)
+		//theta1 := neighbors[1].toNeighbor.Dot(pvn)
+		//invSum := 1.0 / (theta0 + theta1)
+		//to0 := deltaAir * theta1 * invSum
+		//to1 := deltaAir * theta0 * invSum
 
 		if deltaAir > c.Air {
 			panic(i)
@@ -96,10 +96,10 @@ func Wind(climates []Climate, sphere *geodesic.Geodesic) {
 		deltaEnergy := c.AirEnergy * deltaAir / c.Air
 		transfers[i].energy -= deltaEnergy
 
-		transfers[neighbors[0].idx].air += to0
-		transfers[neighbors[0].idx].energy += deltaEnergy * theta0 * invSum
-		transfers[neighbors[1].idx].air += to1
-		transfers[neighbors[1].idx].energy += deltaEnergy * theta1 * invSum
+		transfers[neighbors[0].idx].air += deltaAir * 0.5
+		transfers[neighbors[0].idx].energy += deltaEnergy * 0.5
+		transfers[neighbors[1].idx].air += deltaAir * 0.5
+		transfers[neighbors[1].idx].energy += deltaEnergy * 0.5
 		//deltaI := -deltaEnergy + deltaEnergy * to0 * invSum + deltaEnergy * to1 * invSum
 		//if deltaEnergy > 1E8 || transfers[neighbors[0].idx].energy > 1E8 || transfers[neighbors[1].idx].energy > 1E8 {
 		//	fmt.Println()

@@ -181,7 +181,7 @@ func loadOrCreate(seed int64, size int, sphere *geodesic.Geodesic) *planet.Plane
 
 func RenderTemperature(seed int64, idx int, name string, projection render.Projection, spheres []*geodesic.Geodesic, climates []climate.Climate) {
 	img := renderClimate(projection, spheres, climates)
-	render.WriteImage(img, fmt.Sprintf("renders/wind-test-2/%s-%d-%03d.png", name, seed, idx))
+	render.WriteImage(img, fmt.Sprintf("renders/wind-test-3/%s-%d-%03d.png", name, seed, idx))
 }
 
 func renderImg(seed int64, name string, projection render.Projection, spheres []*geodesic.Geodesic, light sun.Light, p *planet.Planet) {
