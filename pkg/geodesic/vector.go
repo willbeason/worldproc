@@ -49,6 +49,14 @@ func (v Vector) Normalize() Vector {
 	}
 }
 
+func (v Vector) Reject(b Vector) Vector {
+	return v.Sub(b.Scale(v.Dot(b) / b.Dot(b)))
+}
+
+func (v Vector) Length() float64 {
+	return math.Sqrt(v.Dot(v))
+}
+
 type Angle struct {
 	// Theta is the angle with the equator.
 	Theta float64

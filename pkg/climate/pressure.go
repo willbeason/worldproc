@@ -7,8 +7,6 @@ import (
 	"sort"
 )
 
-// w is the coriolis rotation vector magnitude.
-const w = 2 * math.Pi / 86400
 
 // k is the drag force constant.
 const k = 0.0001

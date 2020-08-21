@@ -1,6 +1,7 @@
 package climate
 
 import (
+	"github.com/willbeason/hydrology/pkg/geodesic"
 	"math"
 )
 
@@ -37,6 +38,10 @@ type Climate struct {
 
 	// AirEnergy is the energy held by the air.
 	AirEnergy float64
+
+	// AirVelocity is the magnitude and direction of air flowing through this
+	// tile.
+	AirVelocity geodesic.Vector
 }
 
 func (t *Climate) LandTemperature() float64 {
@@ -75,8 +80,8 @@ func (t *Climate) Simulate(flux float64, latitude float64, altitude float64, sec
 	// deltaAirEnergy is the delta to AirEnergy that brings the system to equilibrium.
 	deltaAirEnergy := totalEnergy * (t.Air * AirSpecificHeat) * invSpecificHeat - t.AirEnergy
 
-	t.AirEnergy += 0.2 * deltaAirEnergy
-	t.LandEnergy -= 0.2 * deltaAirEnergy
+	t.AirEnergy += deltaAirEnergy
+	t.LandEnergy -= deltaAirEnergy
 }
 
 func yearMax(landSpecificHeat, startTemp float64, latitude float64, maxAngle float64) (float64, float64) {

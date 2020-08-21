@@ -58,7 +58,7 @@ func main() {
 			heat(p.Climates, p, sphere, light, seconds)
 			for k := 0; k < nWind; k++ {
 				fmt.Print(" ... wind")
-				climate.Wind(p.Climates, sphere)
+				climate.Flow(p.Climates, sphere, 2.0)
 			}
 			for k := 0; k < nDiffuse; k++ {
 				fmt.Print(" ... diffuse")
@@ -67,10 +67,23 @@ func main() {
 			fmt.Println()
 
 			// Heat up for a year before rendering.
-			RenderTemperature(*seed, idx, "wind", projection, spheres, p.Climates)
+			RenderClimate(*seed, idx, projection, spheres, p.Climates)
 			idx++
+
+			printAveragePressure(p.Climates)
 		}
 	}
+}
+
+func printAveragePressure(climates []climate.Climate) {
+	total := 0.0
+	totV := 0.0
+	for _, c := range climates {
+		total += c.Pressure()
+		totV += c.AirVelocity.Length()
+	}
+	fmt.Printf("Mean Pressure: %.04f\n", total / float64(len(climates)))
+	fmt.Printf("Mean Velocity: %.04f\n", totV / float64(len(climates)))
 }
 
 func initializeClimate(p *planet.Planet, sphere *geodesic.Geodesic, spheres []*geodesic.Geodesic, projection render.Projection) {
@@ -109,7 +122,7 @@ func initializeClimate(p *planet.Planet, sphere *geodesic.Geodesic, spheres []*g
 
 			if day >= 360 || i == 0 {
 				// Heat up for a year before rendering.
-				RenderTemperature(*seed, idx, "heat", projection, spheres, p.Climates)
+				RenderClimate(*seed, idx, projection, spheres, p.Climates)
 				idx++
 			}
 		}
@@ -179,9 +192,12 @@ func loadOrCreate(seed int64, size int, sphere *geodesic.Geodesic) *planet.Plane
 	return p
 }
 
-func RenderTemperature(seed int64, idx int, name string, projection render.Projection, spheres []*geodesic.Geodesic, climates []climate.Climate) {
-	img := renderClimate(projection, spheres, climates)
-	render.WriteImage(img, fmt.Sprintf("renders/wind-test-3/%s-%d-%03d.png", name, seed, idx))
+func RenderClimate(seed int64, idx int, projection render.Projection, spheres []*geodesic.Geodesic, climates []climate.Climate) {
+	img, img2, img3 := renderClimate(projection, spheres, climates)
+	n := 10
+	render.WriteImage(img, fmt.Sprintf("renders/wind-test-%d/temp-%d-%03d.png", n, seed, idx))
+	render.WriteImage(img2, fmt.Sprintf("renders/wind-test-%d/wind-%d-%03d.png", n, seed, idx))
+	render.WriteImage(img3, fmt.Sprintf("renders/wind-test-%d/pressure-%d-%03d.png", n, seed, idx))
 }
 
 func renderImg(seed int64, name string, projection render.Projection, spheres []*geodesic.Geodesic, light sun.Light, p *planet.Planet) {
@@ -189,11 +205,12 @@ func renderImg(seed int64, name string, projection render.Projection, spheres []
 	render.WriteImage(img, fmt.Sprintf("renders/%d-%s.png", seed, name))
 }
 
-func renderClimate(projection render.Projection, spheres []*geodesic.Geodesic, climates []climate.Climate) *image.RGBA {
+func renderClimate(projection render.Projection, spheres []*geodesic.Geodesic, climates []climate.Climate) (*image.RGBA, *image.RGBA, *image.RGBA) {
 	screen := projection.Screen
-	img := image.NewRGBA(image.Rect(0, 0, screen.Width, screen.Height))
 
 	pxTemperatures := make([]float64, screen.Width*screen.Height)
+	pxAirVelocities := make([]float64, screen.Width*screen.Height)
+	pxAirPressures := make([]float64, screen.Width*screen.Height)
 
 	sphere := spheres[len(spheres)-1]
 	for x := 0; x < screen.Width; x++ {
@@ -205,6 +222,8 @@ func renderClimate(projection render.Projection, spheres []*geodesic.Geodesic, c
 			dist := math.Sqrt(geodesic.DistSq(v, sphere.Centers[idx]))
 
 			pxT1 := climates[idx].AirTemperature()
+			pxA1 := climates[idx].AirVelocity.Length()
+			pxP1 := climates[idx].Pressure()
 
 			// Linearly interpolate the cell's stats with the second-closest cell.
 			idx2 := 0
@@ -218,11 +237,23 @@ func renderClimate(projection render.Projection, spheres []*geodesic.Geodesic, c
 			}
 			dist2 := math.Sqrt(distSq2)
 			pxT2 := climates[idx2].AirTemperature()
+			pxA2 := climates[idx2].AirVelocity.Length()
+			pxP2 := climates[idx2].Pressure()
 
 			pxTemperatures[pidx] = render.Lerp(pxT1, pxT2, dist/(dist+dist2))
+			pxAirVelocities[pidx] = render.Lerp(pxA1, pxA2, dist/(dist+dist2))
+			pxAirPressures[pidx] = render.Lerp(pxP1, pxP2, dist/(dist+dist2))
 		}
 	}
 
+	img := image.NewRGBA(image.Rect(0, 0, screen.Width, screen.Height))
 	screen.PaintTemperature(pxTemperatures, img)
-	return img
+
+	img2 := image.NewRGBA(image.Rect(0, 0, screen.Width, screen.Height))
+	screen.PaintAirVelocities(pxAirVelocities, img2)
+
+	img3 := image.NewRGBA(image.Rect(0, 0, screen.Width, screen.Height))
+	screen.PaintAirPressure(pxAirPressures, img3)
+
+	return img, img2, img3
 }

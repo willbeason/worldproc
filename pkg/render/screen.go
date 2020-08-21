@@ -138,11 +138,43 @@ func (s Screen) PaintTemperature(temperatures []float64, img *image.RGBA) {
 	for x := 0; x < s.Width; x++ {
 		for y := 0; y < s.Height; y++ {
 			idx := y*s.Width + x
-
 			t := temperatures[idx]
-
 			c := temperatureCS.ColorAt(t)
+			img.Set(x, y, c)
+		}
+	}
+}
 
+var airVelocityCS = NewColorScale(
+	[]ColorPoint{
+		{0.0, color.RGBA{R: 255, G: 255, B: 255, A: 255}},
+		{0.1, color.RGBA{R: 255, G: 0, B: 0, A: 255}},
+	})
+
+func (s Screen) PaintAirVelocities(airVelocities []float64, img *image.RGBA) {
+	for x := 0; x < s.Width; x++ {
+		for y := 0; y < s.Height; y++ {
+			idx := y*s.Width + x
+			t := airVelocities[idx]
+			c := airVelocityCS.ColorAt(t)
+			img.Set(x, y, c)
+		}
+	}
+}
+
+var airPressureCS = NewColorScale(
+	[]ColorPoint{
+		{0.5, color.RGBA{R: 255, G: 0, B: 0, A: 255}},
+		{1.0, color.RGBA{R: 255, G: 255, B: 255, A: 255}},
+		{1.5, color.RGBA{R: 0, G: 0, B: 255, A: 255}},
+	})
+
+func (s Screen) PaintAirPressure(airPressures []float64, img *image.RGBA) {
+	for x := 0; x < s.Width; x++ {
+		for y := 0; y < s.Height; y++ {
+			idx := y*s.Width + x
+			t := airPressures[idx]
+			c := airPressureCS.ColorAt(t)
 			img.Set(x, y, c)
 		}
 	}
