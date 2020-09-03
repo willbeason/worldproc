@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/willbeason/hydrology/pkg/geodesic"
-	"github.com/willbeason/hydrology/pkg/noise"
-	"github.com/willbeason/hydrology/pkg/planet"
-	"github.com/willbeason/hydrology/pkg/render"
-	"github.com/willbeason/hydrology/pkg/water"
+	"github.com/willbeason/worldproc/pkg/geodesic"
+	"github.com/willbeason/worldproc/pkg/noise"
+	"github.com/willbeason/worldproc/pkg/planet"
+	"github.com/willbeason/worldproc/pkg/render"
+	"github.com/willbeason/worldproc/pkg/water"
 	"image"
 	"math"
 	"math/rand"

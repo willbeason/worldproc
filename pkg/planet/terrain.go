@@ -1,10 +1,10 @@
 package planet
 
 import (
-	"github.com/willbeason/hydrology/pkg/geodesic"
-	"github.com/willbeason/hydrology/pkg/noise"
-	"github.com/willbeason/hydrology/pkg/render"
-	"github.com/willbeason/hydrology/pkg/sun"
+	"github.com/willbeason/worldproc/pkg/geodesic"
+	"github.com/willbeason/worldproc/pkg/noise"
+	"github.com/willbeason/worldproc/pkg/render"
+	"github.com/willbeason/worldproc/pkg/sun"
 	"image"
 	"math"
 )

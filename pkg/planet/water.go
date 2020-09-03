@@ -2,8 +2,8 @@ package planet
 
 import (
 	"fmt"
-	"github.com/willbeason/hydrology/pkg/geodesic"
-	"github.com/willbeason/hydrology/pkg/water"
+	"github.com/willbeason/worldproc/pkg/geodesic"
+	"github.com/willbeason/worldproc/pkg/water"
 	"sort"
 )
 

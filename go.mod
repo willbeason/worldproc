@@ -1,4 +1,4 @@
-module github.com/willbeason/hydrology
+module github.com/willbeason/worldproc
 
 go 1.14
 

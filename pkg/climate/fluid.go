@@ -2,7 +2,7 @@ package climate
 
 import (
 	"fmt"
-	"github.com/willbeason/hydrology/pkg/geodesic"
+	"github.com/willbeason/worldproc/pkg/geodesic"
 	"math"
 	"sort"
 	"sync"

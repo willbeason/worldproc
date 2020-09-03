@@ -1,6 +1,6 @@
 package planet
 
-import "github.com/willbeason/hydrology/pkg/climate"
+import "github.com/willbeason/worldproc/pkg/climate"
 
 type Planet struct {
 	Size int `json:"size"`

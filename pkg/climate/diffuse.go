@@ -1,6 +1,6 @@
 package climate
 
-import "github.com/willbeason/hydrology/pkg/geodesic"
+import "github.com/willbeason/worldproc/pkg/geodesic"
 
 func DiffuseAir(climates []Climate, sphere *geodesic.Geodesic) {
 	airRates := make([]float64, len(climates))

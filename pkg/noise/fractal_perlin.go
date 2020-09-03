@@ -1,7 +1,7 @@
 package noise
 
 import (
-	"github.com/willbeason/hydrology/pkg/geodesic"
+	"github.com/willbeason/worldproc/pkg/geodesic"
 	"math/rand"
 )
 

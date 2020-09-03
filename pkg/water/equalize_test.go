@@ -3,7 +3,7 @@ package water
 import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/willbeason/hydrology/pkg/geodesic"
+	"github.com/willbeason/worldproc/pkg/geodesic"
 	"math/rand"
 	"testing"
 )

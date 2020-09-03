@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/willbeason/hydrology/pkg/geodesic"
-	"github.com/willbeason/hydrology/pkg/render"
+	"github.com/willbeason/worldproc/pkg/geodesic"
+	"github.com/willbeason/worldproc/pkg/render"
 	"image"
 	"image/color"
 	"image/png"

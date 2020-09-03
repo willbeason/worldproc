@@ -1,7 +1,7 @@
 package water
 
 import (
-	"github.com/willbeason/hydrology/pkg/geodesic"
+	"github.com/willbeason/worldproc/pkg/geodesic"
 )
 
 func Rain(amt float64, waters, heights, flow []float64, sphere *geodesic.Geodesic) {
