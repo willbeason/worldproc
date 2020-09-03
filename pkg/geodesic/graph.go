@@ -2,7 +2,6 @@ package geodesic
 
 import (
 	"math"
-	"sort"
 )
 
 type Node struct {
@@ -97,7 +96,6 @@ func Dodecahedron() *Geodesic {
 	g.Link(11, 9)
 	g.Link(11, 10)
 
-	SortNeighbors(g)
 	return g
 }
 
@@ -167,7 +165,6 @@ func Chamfer(g *Geodesic) *Geodesic {
 		}
 	}
 
-	SortNeighbors(g)
 	return result
 }
 
@@ -175,41 +172,4 @@ type NeighborInfo struct {
 	Neighbor int
 	CosTheta float64
 	Sign bool
-}
-
-func SortNeighbors(g *Geodesic) {
-	// We want to sort the neighbors for each node so they're counter-clockwise.
-	for id, f := range g.Faces {
-		ns := f.Neighbors
-		sort.Slice(ns, func(i, j int) bool {
-			return g.Centers[ns[i]].Z > g.Centers[ns[j]].Z
-		})
-		// Faces are now sorted with the north-most neighbor first.
-
-		c := g.Centers[id]
-
-		toNorthMost := g.Centers[ns[0]].Sub(c).Normalize()
-
-		neighbors := make([]NeighborInfo, len(ns))
-		for i, n := range ns {
-			neighbors[i].Neighbor = n
-
-			toN := g.Centers[n].Sub(c).Normalize()
-			neighbors[i].CosTheta = toN.Dot(toNorthMost)
-			neighbors[i].Sign = (i == 0) || toNorthMost.Cross(toN).Dot(c) > 0.0
-		}
-		sort.Slice(neighbors, func(i, j int) bool {
-			if neighbors[i].Sign != neighbors[j].Sign {
-				return neighbors[i].Sign
-			}
-			if neighbors[i].Sign {
-				return neighbors[i].CosTheta > neighbors[j].CosTheta
-			}
-			return neighbors[i].CosTheta < neighbors[j].CosTheta
-		})
-
-		for i, n := range neighbors {
-			f.Neighbors[i] = n.Neighbor
-		}
-	}
 }

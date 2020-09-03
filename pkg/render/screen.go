@@ -164,9 +164,9 @@ func (s Screen) PaintAirVelocities(airVelocities []float64, img *image.RGBA) {
 
 var airPressureCS = NewColorScale(
 	[]ColorPoint{
-		{0.5, color.RGBA{R: 255, G: 0, B: 0, A: 255}},
+		{0.8, color.RGBA{R: 255, G: 0, B: 0, A: 255}},
 		{1.0, color.RGBA{R: 255, G: 255, B: 255, A: 255}},
-		{1.5, color.RGBA{R: 0, G: 0, B: 255, A: 255}},
+		{1.2, color.RGBA{R: 0, G: 0, B: 255, A: 255}},
 	})
 
 func (s Screen) PaintAirPressure(airPressures []float64, img *image.RGBA) {

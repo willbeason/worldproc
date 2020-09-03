@@ -5,6 +5,7 @@ import (
 	"github.com/willbeason/hydrology/pkg/geodesic"
 	"math"
 	"sort"
+	"sync"
 )
 
 const (
@@ -12,23 +13,27 @@ const (
 	// Points in the positive Z direction.
 	w = 2 * math.Pi / 1440
 
-	density    = 50.0
+	density    = 10.0
+	Viscosity = 0.04
+	LandDrag = 0.005
+
 	invDensity = 1.0 / density
 
 	twoW = 2 * w
 
 	wSquared = w * w
 
-	Viscosity = 0.10
 
 	ThirdViscosity = Viscosity / 3.0
 
-	LandDrag = 0.001
 )
 
 type airDelta struct {
-	air    float64
-	energy float64
+	idx            int
+	air            float64
+	energy         float64
+	n0, n1         int
+	theta0, theta1 float64
 }
 
 type airNeighbor struct {
@@ -38,6 +43,7 @@ type airNeighbor struct {
 }
 
 func Flow(climates []Climate, sphere *geodesic.Geodesic, minutes float64) {
+	fmt.Print("A")
 	// Precalculate the pressure everywhere.
 	velocities := make([]geodesic.Vector, len(climates))
 	for i, c := range climates {
@@ -51,14 +57,15 @@ func Flow(climates []Climate, sphere *geodesic.Geodesic, minutes float64) {
 		divUs[i] = Divergence(i, velocities, sphere)
 	}
 
+	fmt.Print("B")
 	// Adjust acceleration in every cell.
 	for i, c := range climates {
 		center := sphere.Centers[i]
-		p := Gradient(i, pressures, sphere)
+		p := PressureGradient(i, pressures, sphere)
 
-		lenP := math.Sqrt(p.Dot(p))
+		lenP := p.Length()
 		pg := geodesic.Vector{}
-		if lenP > 0.0001 {
+		if lenP > 1E-10 {
 			pg = p.Reject(center).Normalize().Scale(lenP)
 		}
 
@@ -71,87 +78,85 @@ func Flow(climates []Climate, sphere *geodesic.Geodesic, minutes float64) {
 		// Subtract out projection of node's face.
 		dv = dv.Reject(center)
 		climates[i].AirVelocity = climates[i].AirVelocity.Add(dv)
-		//if i == 0 {
-		//	fmt.Println("p", p)
-		//	fmt.Println("a", a)
-		//	fmt.Println("delta v", dv)
-		//	fmt.Println("v", climates[i].AirVelocity)
-		//}
 	}
 
+	fmt.Print("C")
+	wg := sync.WaitGroup{}
+	deltas := make(chan airDelta)
+	maxWorkers := 8
+	for worker := 0; worker < maxWorkers; worker++ {
+		wg.Add(1)
+		start := worker * len(climates) / maxWorkers
+		end := (worker + 1) * len(climates) / maxWorkers
+		go func() {
+			for i, c := range climates[start:end] {
+				calculateDelta(start+i, c.AirVelocity, c.Air, c.AirEnergy, minutes, sphere, deltas)
+			}
+			wg.Done()
+		}()
+	}
+
+	wg2 := sync.WaitGroup{}
+	wg2.Add(1)
 	// Record air and energy transfers in every cell.
-	deltaAir := make([]airDelta, len(climates))
-	for i, c := range climates {
-		neighbors := sphere.Faces[i].Neighbors
-		center := sphere.Centers[i]
-
-		if c.AirVelocity.Dot(c.AirVelocity) < 0.00001 {
-			continue
+	go func() {
+		for delta := range deltas {
+			climates[delta.idx].Air -= delta.air
+			climates[delta.idx].AirEnergy -= delta.energy
+			invSum := 1.0 / (delta.theta0 + delta.theta1)
+			climates[delta.n0].Air += delta.air * delta.theta1 * invSum
+			climates[delta.n0].AirEnergy += delta.energy * delta.theta1 * invSum
+			climates[delta.n1].Air += delta.air * delta.theta0 * invSum
+			climates[delta.n1].AirEnergy += delta.energy * delta.theta0 * invSum
 		}
-		norm := c.AirVelocity.Normalize()
+		wg2.Done()
+	}()
+	wg.Wait()
+	close(deltas)
+	wg2.Wait()
+}
 
-		aNeighbors := make([]airNeighbor, len(neighbors))
-		for i, n := range neighbors {
-			aNeighbors[i].idx = n
-			aNeighbors[i].toNeighbor = sphere.Centers[n].Sub(center).Normalize()
-			aNeighbors[i].theta = math.Acos(aNeighbors[i].toNeighbor.Dot(norm))
-			//if math.IsNaN(aNeighbors[i].theta) {
-				//fmt.Println(aNeighbors[i])
-				//fmt.Println(norm)
-				//panic("H")
-			//}
-		}
-		//fmt.Println(aNeighbors)
+func calculateDelta(i int, airVelocity geodesic.Vector, air, airEnergy float64, minutes float64, sphere *geodesic.Geodesic, out chan airDelta) {
+	neighbors := sphere.Faces[i].Neighbors
+	center := sphere.Centers[i]
 
-		sort.Slice(aNeighbors, func(i, j int) bool {
-			// Smallest angles first
-			return aNeighbors[i].theta < aNeighbors[j].theta
-		})
+	if airVelocity.Dot(airVelocity) < 0.00001 {
+		return
+	}
+	norm := airVelocity.Normalize()
 
-		n0 := aNeighbors[0].idx
-		n1 := aNeighbors[1].idx
-
-		theta0 := aNeighbors[0].theta
-		theta1 := aNeighbors[1].theta
-		if theta0 > math.Pi/2 {
-			continue
-		}
-
-		invSum := 1.0 / (theta0 + theta1)
-
-		outAir := math.Min(c.Air-0.01, c.AirVelocity.Length() * minutes)
-		outEnergy := c.AirEnergy * outAir / c.Air
-		deltaAir[i].air -= outAir
-		deltaAir[i].energy -= outEnergy
-
-		deltaAir[n0].air += theta1 * outAir * invSum
-		deltaAir[n0].energy += theta1 * outEnergy * invSum
-		deltaAir[n1].air += theta0 * outAir * invSum
-		// Don't let pressure get below 0.01.
-		deltaAir[n1].energy += theta0 * outEnergy * invSum
-		//if i == 0 {
-		//	fmt.Println(i)
-		//	fmt.Println(norm)
-		//	fmt.Println(n0, n1)
-		//	fmt.Println(theta0, theta1, theta0+theta1, invSum)
-		//	fmt.Println("out air", outAir)
-		//	fmt.Println("delta 0", theta1*outAir*invSum)
-		//	fmt.Println("delta 1", theta0*outAir*invSum)
-		//}
+	aNeighbors := make([]airNeighbor, len(neighbors))
+	for i, n := range neighbors {
+		aNeighbors[i].idx = n
+		aNeighbors[i].toNeighbor = sphere.Centers[n].Sub(center).Normalize()
+		aNeighbors[i].theta = math.Acos(aNeighbors[i].toNeighbor.Dot(norm))
 	}
 
-	sumDeltaAir := 0.0
-	maxDeltaAir := 0.0
-	maxVelocity := 0.0
-	for i, d := range deltaAir {
-		climates[i].Air += d.air
-		climates[i].AirEnergy += d.energy
-		sumDeltaAir += math.Abs(d.air)
-		maxDeltaAir = math.Max(maxDeltaAir, d.air)
-		maxVelocity = math.Max(maxVelocity, climates[i].AirVelocity.Length())
-		//climates[i].AirVelocity = geodesic.Vector{}
+	sort.Slice(aNeighbors, func(i, j int) bool {
+		// Smallest angles first
+		return aNeighbors[i].theta < aNeighbors[j].theta
+	})
+
+	n0 := aNeighbors[0].idx
+	n1 := aNeighbors[1].idx
+
+	theta0 := aNeighbors[0].theta
+	theta1 := aNeighbors[1].theta
+
+	// Don't let pressure get below 0.01.
+	// Delta air is half of the velocity.
+	outAir := math.Min(air-0.01, airVelocity.Length()*minutes) * 0.5
+	outEnergy := airEnergy * outAir / air
+
+	out <- airDelta{
+		idx:    i,
+		air:    outAir,
+		energy: outEnergy,
+		n0:     n0,
+		n1:     n1,
+		theta0: theta0,
+		theta1: theta1,
 	}
-	fmt.Printf(" deltaMax(%.00f, %.04f, %.04f) ", sumDeltaAir, maxDeltaAir, maxVelocity)
 }
 
 func LaplacianVelocity(idx int, climates []Climate, sphere *geodesic.Geodesic) geodesic.Vector {
@@ -176,6 +181,23 @@ func Divergence(idx int, vectors []geodesic.Vector, sphere *geodesic.Geodesic) f
 		result += toN.Dot(v)
 	}
 	return result * 2.0 / float64(len(neighbors))
+}
+
+func PressureGradient(idx int, scalars []float64, sphere *geodesic.Geodesic) geodesic.Vector {
+	neighbors := sphere.Faces[idx].Neighbors
+
+	p := scalars[idx]
+	start := sphere.Centers[idx]
+
+	result := geodesic.Vector{}
+	for _, n := range neighbors {
+		if scalars[n] > p {
+			continue
+		}
+		toN := sphere.Centers[n].Sub(start).Normalize()
+		result = result.Add(toN.Scale(scalars[n] - p))
+	}
+	return result.Scale(2.0 / float64(len(neighbors)))
 }
 
 func Gradient(idx int, scalars []float64, sphere *geodesic.Geodesic) geodesic.Vector {

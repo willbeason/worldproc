@@ -42,10 +42,15 @@ func main() {
 		fmt.Println("Loaded Climate")
 	}
 
+	//for i := range p.Climates {
+	//	//p.Climates[i].AirEnergy *= 1.05
+	//	//p.Climates[i].Air *= 1.05
+	//}
+
 	imax := 144
 	seconds := 600.0
 	nDiffuse := 1
-	nWind := 5
+	nWind := 10
 	light := &sun.Directional{}
 	idx := 0
 	for day := 0; day < 20; day++ {
@@ -58,7 +63,8 @@ func main() {
 			heat(p.Climates, p, sphere, light, seconds)
 			for k := 0; k < nWind; k++ {
 				fmt.Print(" ... wind")
-				climate.Flow(p.Climates, sphere, 2.0)
+				climate.Flow(p.Climates, sphere, 1.0)
+				climate.DiffuseAir(p.Climates, sphere)
 			}
 			for k := 0; k < nDiffuse; k++ {
 				fmt.Print(" ... diffuse")
@@ -102,7 +108,6 @@ func initializeClimate(p *planet.Planet, sphere *geodesic.Geodesic, spheres []*g
 		p.Climates[i].SetTemperature(climate.ZeroCelsius)
 	}
 	// Begin simulating every hour.
-	idx := 0
 	imax := 24
 	seconds := 3600.0
 	nDiffuse := 6
@@ -118,13 +123,17 @@ func initializeClimate(p *planet.Planet, sphere *geodesic.Geodesic, spheres []*g
 				fmt.Print(" ... diffuse")
 				diffuseHeat(p.Climates, sphere, seconds)
 			}
+			for i, c := range p.Climates {
+				p.Climates[i].Air /= c.Pressure()
+			}
+
 			fmt.Println()
 
-			if day >= 360 || i == 0 {
-				// Heat up for a year before rendering.
-				RenderClimate(*seed, idx, projection, spheres, p.Climates)
-				idx++
-			}
+			//if day >= 360 || i == 0 {
+			//	// Heat up for a year before rendering.
+			//	RenderClimate(*seed, idx, projection, spheres, p.Climates)
+			//	idx++
+			//}
 		}
 	}
 }
@@ -194,7 +203,7 @@ func loadOrCreate(seed int64, size int, sphere *geodesic.Geodesic) *planet.Plane
 
 func RenderClimate(seed int64, idx int, projection render.Projection, spheres []*geodesic.Geodesic, climates []climate.Climate) {
 	img, img2, img3 := renderClimate(projection, spheres, climates)
-	n := 10
+	n := 17
 	render.WriteImage(img, fmt.Sprintf("renders/wind-test-%d/temp-%d-%03d.png", n, seed, idx))
 	render.WriteImage(img2, fmt.Sprintf("renders/wind-test-%d/wind-%d-%03d.png", n, seed, idx))
 	render.WriteImage(img3, fmt.Sprintf("renders/wind-test-%d/pressure-%d-%03d.png", n, seed, idx))
