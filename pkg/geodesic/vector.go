@@ -53,6 +53,10 @@ func (v Vector) Reject(b Vector) Vector {
 	return v.Sub(b.Scale(v.Dot(b) / b.Dot(b)))
 }
 
+func (v Vector) Length2() float64 {
+	return v.X*v.X + v.Y*v.Y + v.Z*v.Z
+}
+
 func (v Vector) Length() float64 {
 	return math.Sqrt(v.X*v.X + v.Y*v.Y + v.Z*v.Z)
 }
