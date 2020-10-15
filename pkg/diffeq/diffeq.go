@@ -31,46 +31,43 @@ func Trapezoid(h, x0, y0, v0 float64) (float64, float64, float64) {
 	// Euler's method on the velocity.
 	v1 := v0 + h*k1
 	// Trapezoid to estimate x and y.
-	x1 := x0 - h*(v0+v1)/2
-	y1 := y0 + h*(v0+v1)/2
 
 	// Second estimate of f.
-	k2 := x1 - y1
+	k2 := k1 - h*(v0+v1)
 	// Trapezoid on the two estimates of f.
-	v2 := v0 + h*(k1+k2)/2
-	x2 := x0 - h*(v0+v2)/2
-	y2 := y0 + h*(v0+v2)/2
+	ho2 := h/2
+	v2 := v0 + ho2*(k1+k2)
+	x2 := x0 - ho2*(v0+v2)
+	y2 := y0 + ho2*(v0+v2)
 
 	return x2, y2, v2
 }
 
 func RK4(h, x0, y0, v0 float64) (float64, float64, float64) {
+	// First estimate at h/2.
 	k1 := x0 - y0
 	ho2 := h/2
-	ho4 := h/4
-
-	// First estimate at h/2.
 	v1 := v0 + ho2*k1
-	x1 := x0 - ho4*(v0+v1)
-	y1 := y0 + ho4*(v0+v1)
-	k2 := x1 - y1
 
 	// Second estimate at h/2.
+	k2 := k1 - ho2*(v0+v1)
 	v2 := v0 + ho2*k2
 	wv2 := (2*v0+v1+v2)/4
-	x2 := x0 - ho2*wv2
-	y2 := y0 + ho2*wv2
-	k3 := x2 - y2
 
 	// Estimate at h.
-	ho6 := h/6
+	k3 := k1 - h*wv2
 	v3 := v0 + h*k3
-	wv3 := v0 + 2*v1 + 2*v2 + v3
-	x3 := x0 - ho6*wv3
-	y3 := y0 + ho6*wv3
-	k4 := x3 - y3
+	ho6 := h/6
+	wv3 := (v0 + 2*v1 + 2*v2 + v3)*ho6
+	x3 := x0 - wv3
+	y3 := y0 + wv3
 
 	// Complete estimate.
+	k4 := x3 - y3
 	v := v0 + ho6*(k1+2*k2+2*k3+k4)
-	return x3, y3, v
+	wv4 := (v0 + 2*v1 + 2*v2 + (v3+v)/2)*ho6
+	x4 := x0 - wv4
+	y4 := y0 + wv4
+
+	return x4, y4, v
 }
