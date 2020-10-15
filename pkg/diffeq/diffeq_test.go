@@ -71,22 +71,22 @@ func TestApproximate(t *testing.T) {
 			name:   "RK4 5",
 			method: RK4,
 			steps:  5,
-			errX:   0.0001026,
-			errV:   0.0002540,
+			errX:   0.0000421,
+			errV:   0.0000878,
 		},
 		{
 			name:   "RK4 10",
 			method: RK4,
 			steps:  10,
-			errX:   0.000013050,
-			errV:   0.000030700,
+			errX:   0.00000599,
+			errV:   0.00001303,
 		},
 		{
 			name:   "RK4 20",
 			method: RK4,
 			steps:  20,
-			errX:   0.000001654,
-			errV:   0.000003786,
+			errX:   0.000000795,
+			errV:   0.000001750,
 		},
 	}
 

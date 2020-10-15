@@ -55,20 +55,19 @@ func RK4(h, x0, y0, v0 float64) (float64, float64, float64) {
 
 	// Second estimate of h/2.
 	v2 := v0 + (h/2)*k2
-	x2 := x0 - (h/4)*(v0+v2)
-	y2 := y0 + (h/4)*(v0+v2)
+	wv2 := (2*v0+v1+v2)/4
+	x2 := x0 - (h/2)*wv2
+	y2 := y0 + (h/2)*wv2
 	k3 := x2 - y2
 
 	// Estimate h.
 	v3 := v0 + h*k3
-	wv := v0+2*v1+2*v2+v3
-	x3 := x0 - (h/6)*wv
-	y3 := y0 + (h/6)*wv
+	wv3 := (v0 + 2*v1 + 2*v2 + v3) / 6
+	x3 := x0 - h*wv3
+	y3 := y0 + h*wv3
 	k4 := x3 - y3
 
 	// Complete estimate.
 	v := v0 + (h/6)*(k1+2*k2+2*k3+k4)
-	x := x0 - (h/6)*wv
-	y := y0 + (h/6)*wv
-	return x, y, v
+	return x3, y3, v
 }
